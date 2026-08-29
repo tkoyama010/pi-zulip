@@ -8,7 +8,7 @@ Zulip chat integration for [Pi coding agent](https://github.com/earendil-works/p
 |------|-------------|
 | `zulip_get_messages` | Fetch messages from a stream or topic |
 | `zulip_search_messages` | Keyword search across all messages |
-| `zulip_send_message` | Send messages to streams or DMs |
+| `zulip_send_message` | Send messages to streams or DMs (requires confirmation) |
 | `zulip_edit_message` | Edit your own messages (content + topic) |
 | `zulip_delete_message` | Delete your own messages |
 | `zulip_add_reaction` | Add emoji reactions |

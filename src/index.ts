@@ -293,7 +293,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "zulip_send_message",
     label: "Zulip Send Message",
-    description: "Send a message to a Zulip stream or direct message",
+    description: "Send a message to a Zulip stream or direct message (requires user confirmation)",
     parameters: Type.Object({
       type: Type.Union(
         [Type.Literal("stream"), Type.Literal("private")],
@@ -868,6 +868,19 @@ export default function (pi: ExtensionAPI) {
         );
       }
     },
+  });
+
+// ── Guard: require confirmation before sending messages ──────────────────
+
+  pi.on("tool_call", async (event, ctx) => {
+    if (event.toolName === "zulip_send_message") {
+      const preview = ctx.ui.theme.bold?.(event.input.content?.slice(0, 120) ?? "") ?? event.input.content?.slice(0, 120) ?? "";
+      const ok = await ctx.ui.confirm(
+        "Send Zulip message?",
+        `To: ${event.input.to}\nTopic: ${event.input.topic ?? "(none)"}\n\n${preview}`,
+      );
+      if (!ok) return { block: true, reason: "Message send blocked by user", terminate: true };
+    }
   });
 
   // ── /zulip-setup ─────────────────────────────────────────────────────────
