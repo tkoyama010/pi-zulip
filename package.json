@@ -4,9 +4,27 @@
   "description": "Zulip chat integration for Pi coding agent",
   "type": "module",
   "main": "src/index.ts",
+  "files": [
+    "src"
+  ],
   "pi": {
     "extensions": ["./src/index.ts"]
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tkoyama010/pi-zulip.git"
+  },
+  "keywords": [
+    "pi",
+    "pi-coding-agent",
+    "pi-extension",
+    "zulip",
+    "chat"
+  ],
+  "license": "MIT",
   "dependencies": {
     "typebox": "^0.34.0"
   },
