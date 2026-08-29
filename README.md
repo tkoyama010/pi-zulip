@@ -4,23 +4,28 @@ Zulip chat integration for [Pi coding agent](https://github.com/earendil-works/p
 
 ## Features
 
-- **zulip_get_messages** — Fetch messages from a stream or topic
-- **zulip_send_message** — Send messages to streams or DMs
-- **zulip_get_streams** — List subscribed streams
-- **zulip_get_topics** — List topics in a stream
-- **zulip_create_draft** — Save a message draft for later
-- **zulip_get_drafts** — List saved drafts
-- **zulip_delete_draft** — Delete a draft
-- **/zulip** — Check connection status
+| Tool | Description |
+|------|-------------|
+| `zulip_get_messages` | Fetch messages from a stream or topic |
+| `zulip_search_messages` | Keyword search across all messages |
+| `zulip_send_message` | Send messages to streams or DMs |
+| `zulip_edit_message` | Edit your own messages (content + topic) |
+| `zulip_delete_message` | Delete your own messages |
+| `zulip_add_reaction` | Add emoji reactions |
+| `zulip_remove_reaction` | Remove emoji reactions |
+| `zulip_get_streams` | List subscribed streams |
+| `zulip_get_topics` | List topics in a stream |
+| `zulip_create_draft` | Save a message draft for later |
+| `zulip_get_drafts` | List saved drafts |
+| `zulip_delete_draft` | Delete a draft |
+
+Commands:
+- `/zulip` — Check connection status
+- `/zulip-setup` — Interactively configure credentials
 
 ## Setup
 
-### 1. Get your Zulip API key
-
-1. Open Zulip → Settings → Account & privacy → API key
-2. Copy your API key
-
-### 2. Set environment variables
+### Environment variables
 
 ```bash
 export ZULIP_SERVER="https://your-org.zulipchat.com"
@@ -28,94 +33,54 @@ export ZULIP_EMAIL="your@email.com"
 export ZULIP_API_KEY="your-api-key"
 ```
 
-Or add to your shell profile (`~/.zshrc`, `~/.bashrc`, etc.).
+### Interactive setup
 
-### 3. Install
+```
+/zulip-setup
+```
+
+Guides you through entering server, email, and API key with immediate validation.
+
+### Get your API key
+
+Zulip → Settings → Account & privacy → API key
+
+### Install
 
 ```bash
 # Global (all projects)
-mkdir -p ~/.pi/agent/extensions
 ln -s /path/to/pi-zulip ~/.pi/agent/extensions/pi-zulip
 
 # Or point pi directly
 pi -e /path/to/pi-zulip/src/index.ts
 ```
 
-### 4. Verify
+### Verify
 
 ```
 /zulip
 ```
 
-## Tools
+## Error handling
 
-### zulip_get_messages
+- **401**: Invalid credentials → run `/zulip-setup` to reconfigure
+- **429**: Rate limited → automatic retry with `Retry-After` backoff
+- **5xx**: Server error → exponential backoff, up to 3 retries
+- **Abort**: Press Esc during a tool call to cancel in-flight requests
 
-Fetch messages from a stream, optionally filtered by topic.
+## Search syntax
 
-```
-Parameters:
-  stream       (optional) Stream name
-  topic        (optional) Topic name
-  num_before   (optional) Messages before anchor (default: 10)
-  num_after    (optional) Messages after anchor (default: 0)
-  include_anchor (optional) Include anchor message (default: false)
-```
-
-### zulip_send_message
-
-Send a message to a stream or DM.
+`zulip_search_messages` supports Zulip search operators:
 
 ```
-Parameters:
-  type    "stream" or "private"
-  to      Stream name or comma-separated emails
-  topic   Topic name (required for stream)
-  content Message content (Markdown)
+stream:general topic:review
+sender:alice@example.com
+has:link
+has:image
+python stream:backend near:12345
 ```
 
-### zulip_get_streams
-
-List your subscribed streams.
-
-```
-Parameters:
-  include_all  Include unsubscribed streams (default: false)
-```
-
-### zulip_get_topics
-
-List topics in a stream.
-
-```
-Parameters:
-  stream  Stream name (required)
-```
-
-### zulip_create_draft
-
-Save a draft message for later editing and sending.
-
-```
-Parameters:
-  type     "stream" or "private"
-  to       Stream name or comma-separated emails
-  topic    Topic name (required for stream)
-  content  Draft content (Markdown)
-```
-
-### zulip_get_drafts
-
-List all saved drafts.
-
-### zulip_delete_draft
-
-Delete a saved draft by ID.
-
-```
-Parameters:
-  draft_id  ID of the draft to delete
-```
+Combine operators with spaces.
 
 ## License
 
