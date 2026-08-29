@@ -29,8 +29,8 @@ function getZulipConfig(): ZulipConfig {
     );
   }
 
-  cachedConfig = { server, email, apiKey };
-  return cachedConfig;
+  cachedConfig = { server: server!, email: email!, apiKey: apiKey! };
+  return cachedConfig!;
 }
 
 function authHeader(): string {
@@ -874,7 +874,8 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName === "zulip_send_message") {
-      const preview = ctx.ui.theme.bold?.(event.input.content?.slice(0, 120) ?? "") ?? event.input.content?.slice(0, 120) ?? "";
+      const content = event.input.content as unknown as string | undefined;
+      const preview = ctx.ui.theme.bold?.(content?.slice(0, 120) ?? "") ?? content?.slice(0, 120) ?? "";
       const ok = await ctx.ui.confirm(
         "Send Zulip message?",
         `To: ${event.input.to}\nTopic: ${event.input.topic ?? "(none)"}\n\n${preview}`,
@@ -931,7 +932,7 @@ export default function (pi: ExtensionAPI) {
       if (!apiKey) return;
 
       // Validate
-      const prev = { ...cachedConfig };
+      const prev = cachedConfig ? { ...cachedConfig } : null;
       cachedConfig = {
         server: server.trim(),
         email: email.trim(),
