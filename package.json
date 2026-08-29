@@ -29,6 +29,8 @@
     "@sinclair/typebox": "^0.34.0"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "^0.84.0"
+    "@earendil-works/pi-coding-agent": "^0.84.0",
+    "fs": "*",
+    "path": "*"
   }
 }
