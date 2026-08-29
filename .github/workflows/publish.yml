@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  id-token: write
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -14,10 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: "https://registry.npmjs.org"
 
       - run: npm ci
 
       - run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
