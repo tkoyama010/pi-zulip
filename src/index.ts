@@ -957,8 +957,17 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("zulip-setup", {
     description:
       "Interactively configure Zulip credentials for this session",
+    parameters: Type.Optional(
+      Type.Object({
+        zuliprc_path: Type.Optional(
+          Type.String({
+            description: "Path to zuliprc file to read/write (e.g. ~/.zuliprc)",
+          }),
+        ),
+      }),
+    ),
     handler: async (_args, ctx) => {
-      const rcPath = typeof _args === "string" ? _args : undefined;
+      const rcPath = typeof _args === "string" ? _args : (_args as { zuliprc_path?: string } | undefined)?.zuliprc_path;
       const targetZuliprc = rcPath || process.env.ZULIPRC_PATH || null;
 
       // If zuliprc path provided, set it
