@@ -1,5 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import * as fs from "fs";
+import * as path from "path";
 
 // ─── Config ────────────────────────────────────────────────────────────────
 
@@ -10,10 +12,76 @@ type ZulipConfig = {
 };
 
 let cachedConfig: ZulipConfig | null = null;
+let zuliprcPath: string | null = null;
+
+type ZuliprcData = {
+  api: {
+    key?: string;
+    email?: string;
+    site?: string;
+  };
+};
+
+function parseZuliprc(filePath: string): ZuliprcData {
+  const result: ZuliprcData = { api: {} };
+  let content: string;
+  try {
+    content = fs.readFileSync(filePath, "utf8");
+  } catch {
+    return result;
+  }
+
+  let currentSection = "";
+  for (const rawLine of content.split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#") || line.startsWith(";")) continue;
+
+    const sectionMatch = line.match(/^\[([^\]]+)\]$/);
+    if (sectionMatch) {
+      currentSection = sectionMatch[1];
+      continue;
+    }
+
+    const kvMatch = line.match(/^([^=]+)=(.*)$/);
+    if (kvMatch && currentSection === "api") {
+      const key = kvMatch[1].trim();
+      const value = kvMatch[2].trim();
+      if (key === "key") result.api.key = value;
+      else if (key === "email") result.api.email = value;
+      else if (key === "site") result.api.site = value;
+    }
+  }
+
+  return result;
+}
+
+function writeZuliprc(filePath: string, config: ZulipConfig): void {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    filePath,
+    `[api]\nkey=${config.apiKey}\nemail=${config.email}\nsite=${config.server}\n`,
+  );
+}
+
+function getConfigFromZuliprc(): ZulipConfig | null {
+  if (!zuliprcPath) return null;
+  const data = parseZuliprc(zuliprcPath);
+  if (!data.api.key || !data.api.email || !data.api.site) return null;
+  return { server: data.api.site, email: data.api.email, apiKey: data.api.key };
+}
 
 function getZulipConfig(): ZulipConfig {
   if (cachedConfig) return cachedConfig;
 
+  // Try zuliprc first
+  const fromRc = getConfigFromZuliprc();
+  if (fromRc) {
+    cachedConfig = fromRc;
+    return cachedConfig;
+  }
+
+  // Fall back to env vars
   const server = process.env.ZULIP_SERVER;
   const email = process.env.ZULIP_EMAIL;
   const apiKey = process.env.ZULIP_API_KEY;
@@ -888,16 +956,48 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("zulip-setup", {
     description:
       "Interactively configure Zulip credentials for this session",
+    parameters: Type.Optional(
+      Type.Object({
+        zuliprc_path: Type.Optional(
+          Type.String({
+            description: "Path to zuliprc file to read/write (e.g. ~/.zuliprc)",
+          }),
+        ),
+      }),
+    ),
     handler: async (_args, ctx) => {
+      const rcPath = typeof _args === "string" ? _args : (_args as { zuliprc_path?: string } | undefined)?.zuliprc_path;
+      const targetZuliprc = rcPath || process.env.ZULIPRC_PATH || null;
+
+      // If zuliprc path provided, set it
+      if (targetZuliprc) {
+        zuliprcPath = targetZuliprc;
+        const existing = getConfigFromZuliprc();
+        if (existing) {
+          const ok = await ctx.ui.confirm(
+            "Zuliprc found",
+            `Path: ${targetZuliprc}\nServer: ${existing.server}\nEmail: ${existing.email}\nUse this config?`,
+          );
+          if (ok) {
+            cachedConfig = existing;
+            const info = (await zulipFetch("/register", {}, ctx)) as {
+              queue_id: string;
+            };
+            ctx.ui.notify(
+              `Zuliprc loaded. Queue: ${info.queue_id}`,
+              "info",
+            );
+            return;
+          }
+        }
+      }
+
       // Check if already configured
-      if (
-        process.env.ZULIP_SERVER &&
-        process.env.ZULIP_EMAIL &&
-        process.env.ZULIP_API_KEY
-      ) {
+      try {
+        const existing = getZulipConfig();
         const ok = await ctx.ui.confirm(
           "Zulip already configured",
-          `Server: ${process.env.ZULIP_SERVER}\nEmail: ${process.env.ZULIP_EMAIL}\nReconfigure?`,
+          `Server: ${existing.server}\nEmail: ${existing.email}\nReconfigure?`,
         );
         if (!ok) {
           const info = (await zulipFetch("/register", {}, ctx)) as {
@@ -909,6 +1009,8 @@ export default function (pi: ExtensionAPI) {
           );
           return;
         }
+      } catch {
+        // Not configured, proceed to setup
       }
 
       // Interactive setup
@@ -930,13 +1032,22 @@ export default function (pi: ExtensionAPI) {
       );
       if (!apiKey) return;
 
-      // Validate
-      const prev = { ...cachedConfig };
-      cachedConfig = {
+      const config = {
         server: server.trim(),
         email: email.trim(),
         apiKey: apiKey.trim(),
       };
+
+      // Write to zuliprc if path provided
+      if (targetZuliprc) {
+        writeZuliprc(targetZuliprc, config);
+        ctx.ui.notify(`Zuliprc written to: ${targetZuliprc}`, "info");
+      }
+
+      // Validate
+      const prev = cachedConfig ? { ...cachedConfig } : null;
+      const prevRc = zuliprcPath;
+      cachedConfig = config;
 
       try {
         const info = (await zulipFetch("/register", {}, ctx)) as {
@@ -948,6 +1059,7 @@ export default function (pi: ExtensionAPI) {
         );
       } catch (error) {
         cachedConfig = prev;
+        zuliprcPath = prevRc;
         ctx.ui.notify(
           `Connection failed: ${error instanceof Error ? error.message : error}`,
           "error",
