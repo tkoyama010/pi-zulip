@@ -48,11 +48,7 @@ Zulip → Settings → Account & privacy → API key
 ### Install
 
 ```bash
-# Global (all projects)
-ln -s /path/to/pi-zulip ~/.pi/agent/extensions/pi-zulip
-
-# Or point pi directly
-pi -e /path/to/pi-zulip/src/index.ts
+npm install -g @tkoyama010/pi-zulip
 ```
 
 ### Verify

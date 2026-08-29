@@ -1,5 +1,5 @@
 {
-  "name": "pi-zulip",
+  "name": "@tkoyama010/pi-zulip",
   "version": "0.1.0",
   "description": "Zulip chat integration for Pi coding agent",
   "type": "module",
