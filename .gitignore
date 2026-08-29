@@ -1,0 +1,12 @@
+# Pi Coding Agent build outputs
+/dist/
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
+
+# Env
+.env
+.env.local

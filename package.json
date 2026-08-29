@@ -1,0 +1,16 @@
+{
+  "name": "pi-zulip",
+  "version": "0.1.0",
+  "description": "Zulip chat integration for Pi coding agent",
+  "type": "module",
+  "main": "src/index.ts",
+  "pi": {
+    "extensions": ["./src/index.ts"]
+  },
+  "dependencies": {
+    "typebox": "^0.34.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.84.0"
+  }
+}
