@@ -112,6 +112,18 @@ function zulipUrl(path: string): string {
   return `${base}/api/v1${path}`;
 }
 
+async function resolveStreamId(streamNameOrId: string, ctx?: ExtensionContext): Promise<number> {
+  const num = Number(streamNameOrId);
+  if (Number.isInteger(num)) return num;
+
+  const data = (await zulipFetch("/streams", {}, ctx)) as {
+    streams: Array<{ stream_id: number; name: string }>;
+  };
+  const match = data.streams.find((s) => s.name === streamNameOrId);
+  if (!match) throw new Error(`Stream "${streamNameOrId}" not found.`);
+  return match.stream_id;
+}
+
 // ─── Retry-aware fetch ────────────────────────────────────────────────────
 
 type ZulipFetchOptions = {
@@ -752,8 +764,9 @@ export default function (pi: ExtensionAPI) {
       }),
     }),
     async execute(_toolCallId, params, _signal, _update, ctx) {
+      const streamId = await resolveStreamId(params.stream, ctx);
       const data = (await zulipFetch(
-        `/users/me/${encodeURIComponent(params.stream)}/topics`,
+        `/users/me/${streamId}/topics`,
         {},
         ctx,
       )) as {
