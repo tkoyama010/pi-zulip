@@ -1,7 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 // ─── Config ────────────────────────────────────────────────────────────────
 
@@ -922,7 +922,7 @@ export default function (pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       try {
         const config = getZulipConfig();
-        const info = (await zulipFetch("/register", {}, ctx)) as {
+        const info = (await zulipFetch("/register", { method: "POST" }, ctx)) as {
           queue_id: string;
         };
         ctx.ui.notify(
@@ -957,8 +957,17 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("zulip-setup", {
     description:
       "Interactively configure Zulip credentials for this session",
+    parameters: Type.Optional(
+      Type.Object({
+        zuliprc_path: Type.Optional(
+          Type.String({
+            description: "Path to zuliprc file to read/write (e.g. ~/.zuliprc)",
+          }),
+        ),
+      }),
+    ),
     handler: async (_args, ctx) => {
-      const rcPath = typeof _args === "string" ? _args : undefined;
+      const rcPath = typeof _args === "string" ? _args : (_args as { zuliprc_path?: string } | undefined)?.zuliprc_path;
       const targetZuliprc = rcPath || process.env.ZULIPRC_PATH || null;
 
       // If zuliprc path provided, set it
@@ -972,7 +981,7 @@ export default function (pi: ExtensionAPI) {
           );
           if (ok) {
             cachedConfig = existing;
-            const info = (await zulipFetch("/register", {}, ctx)) as {
+            const info = (await zulipFetch("/register", { method: "POST" }, ctx)) as {
               queue_id: string;
             };
             ctx.ui.notify(
@@ -992,7 +1001,7 @@ export default function (pi: ExtensionAPI) {
           `Server: ${existing.server}\nEmail: ${existing.email}\nReconfigure?`,
         );
         if (!ok) {
-          const info = (await zulipFetch("/register", {}, ctx)) as {
+          const info = (await zulipFetch("/register", { method: "POST" }, ctx)) as {
             queue_id: string;
           };
           ctx.ui.notify(
@@ -1042,7 +1051,7 @@ export default function (pi: ExtensionAPI) {
       cachedConfig = config;
 
       try {
-        const info = (await zulipFetch("/register", {}, ctx)) as {
+        const info = (await zulipFetch("/register", { method: "POST" }, ctx)) as {
           queue_id: string;
         };
         ctx.ui.notify(
