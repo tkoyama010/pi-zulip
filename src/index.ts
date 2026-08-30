@@ -922,7 +922,7 @@ export default function (pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       try {
         const config = getZulipConfig();
-        const info = (await zulipFetch("/register", {}, ctx)) as {
+        const info = (await zulipFetch("/register", { method: "POST" }, ctx)) as {
           queue_id: string;
         };
         ctx.ui.notify(
@@ -981,7 +981,7 @@ export default function (pi: ExtensionAPI) {
           );
           if (ok) {
             cachedConfig = existing;
-            const info = (await zulipFetch("/register", {}, ctx)) as {
+            const info = (await zulipFetch("/register", { method: "POST" }, ctx)) as {
               queue_id: string;
             };
             ctx.ui.notify(
@@ -1001,7 +1001,7 @@ export default function (pi: ExtensionAPI) {
           `Server: ${existing.server}\nEmail: ${existing.email}\nReconfigure?`,
         );
         if (!ok) {
-          const info = (await zulipFetch("/register", {}, ctx)) as {
+          const info = (await zulipFetch("/register", { method: "POST" }, ctx)) as {
             queue_id: string;
           };
           ctx.ui.notify(
@@ -1051,7 +1051,7 @@ export default function (pi: ExtensionAPI) {
       cachedConfig = config;
 
       try {
-        const info = (await zulipFetch("/register", {}, ctx)) as {
+        const info = (await zulipFetch("/register", { method: "POST" }, ctx)) as {
           queue_id: string;
         };
         ctx.ui.notify(
