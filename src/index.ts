@@ -803,7 +803,7 @@ export default function (pi: ExtensionAPI) {
       ),
       to: Type.String({
         description:
-          "Stream name (for stream) or comma-separated emails (for DM)",
+          "Stream ID (for stream) or comma-separated emails (for DM)",
       }),
       topic: Type.Optional(
         Type.String({
@@ -815,27 +815,31 @@ export default function (pi: ExtensionAPI) {
       }),
     }),
     async execute(_toolCallId, params, _signal, _update, ctx) {
-      const body = new URLSearchParams({
+      const draft = {
         type: params.type,
-        to: params.to,
+        to: params.type === "stream" ? [Number(params.to)] : params.to.split(","),
         content: params.content,
         ...(params.topic ? { topic: params.topic } : {}),
+      };
+      const body = new URLSearchParams({
+        drafts: JSON.stringify([draft]),
       });
 
       const data = (await zulipFetch(
         "/drafts",
         { method: "POST", body: body.toString() },
         ctx,
-      )) as { id: number };
+      )) as { ids: number[] };
 
+      const draftId = data.ids?.[0];
       return {
         content: [
           {
             type: "text",
-            text: `Draft saved (id: ${data.id}). Edit and send from Zulip UI or with /zulip-drafts.`,
+            text: `Draft saved (id: ${draftId}). Edit and send from Zulip UI or with /zulip-drafts.`,
           },
         ],
-        details: { draftId: data.id },
+        details: { draftId },
       };
     },
   });
