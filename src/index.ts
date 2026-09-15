@@ -278,7 +278,7 @@ export default function (pi: ExtensionAPI) {
     description: "Fetch messages from a Zulip stream, topic, or narrow",
     parameters: Type.Object({
       stream: Type.Optional(
-        Type.String({ description: "Stream name to fetch messages from" }),
+        Type.String({ description: "Stream name for fetching messages" }),
       ),
       topic: Type.Optional(
         Type.String({ description: "Topic name to filter by" }),
@@ -760,7 +760,7 @@ export default function (pi: ExtensionAPI) {
     description: "List topics in a Zulip stream",
     parameters: Type.Object({
       stream: Type.String({
-        description: "Stream name to fetch topics from",
+        description: "Stream name for fetching topics",
       }),
     }),
     async execute(_toolCallId, params, _signal, _update, ctx) {
